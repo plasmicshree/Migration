@@ -1,37 +1,80 @@
-## Welcome to GitHub Pages
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
 
-You can use the [editor on GitHub](https://github.com/plasmicshree/Migration/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+.node circle {
+  fill: #999;
+}
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+.node text {
+  font: 12px sans-serif;
+}
 
-### Markdown
+.node--internal circle {
+  fill: #555;
+}
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+.node--internal text {
+  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+}
 
-```markdown
-Syntax highlighted code block
+.link {
+  fill: none;
+  stroke: #555;
+  stroke-opacity: 0.4;
+  stroke-width: 1.5px;
+}
 
-# Header 1
-## Header 2
-### Header 3
+</style>
+<svg width="1560" height="155000"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
 
-- Bulleted
-- List
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height"),
+    g = svg.append("g").attr("transform", "translate(90,0)");
 
-1. Numbered
-2. List
+var tree = d3.cluster()
+    .size([height , width - 650])
 
-**Bold** and _Italic_ and `Code` text
+var stratify = d3.stratify()
+    .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf(".")); });
 
-[Link](url) and ![Image](src)
-```
+d3.csv("Nepal.csv", function(error, data) {
+  if (error) throw error;
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+  var root = stratify(data)
+      .sort(function(a, b) { return (a.height - b.height) || a.id.localeCompare(b.id); });
 
-### Jekyll Themes
+  tree(root);
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/plasmicshree/Migration/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+  var link = g.selectAll(".link")
+      .data(root.descendants().slice(1))
+    .enter().append("path")
+      .attr("class", "link")
+      .attr("d", function(d) {
+        return "M" + d.y + "," + d.x
+            + "C" + (d.parent.y + 100) + "," + d.x
+            + " " + (d.parent.y + 100) + "," + d.parent.x
+            + " " + d.parent.y + "," + d.parent.x;
+      });
 
-### Support or Contact
+  var node = g.selectAll(".node")
+      .data(root.descendants())
+    .enter().append("g")
+      .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+  node.append("circle")
+      .attr("r", 5)
+      .style("fill", function (d) { return '#1f77b4'; });
+
+  node.append("text")
+      .attr("dy", 3)
+      .attr("x", function(d) { return d.children ? -8 : 8; })
+      .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+      .text(function(d) { return d.id.substring(d.id.lastIndexOf(".") + 1); });
+});
+
+</script>
